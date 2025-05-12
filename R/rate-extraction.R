@@ -12,6 +12,7 @@
 #' birthdate <- ymd("1980-06-15")
 #' age_date <- ymd("2020-06-14")
 #' age_function(birthdate, age_date)
+#' @export
 age_function <- function(birthdate,age_date) {
   return(time_length(interval(birthdate, age_date), "years"))
 }
@@ -25,6 +26,7 @@ age_function <- function(birthdate,age_date) {
 #'
 #' @return A `Date` vector where all leap days (Feb 29) are moved to Feb 28.
 #'
+#'@export
 adjust_elipe <- function(date) {
   # Move Feb 29 to Feb 28
   date[month(date) == 2 & day(date) == 29] <- date[month(date) == 2 & day(date) == 29] - days(1)
@@ -52,6 +54,7 @@ adjust_elipe <- function(date) {
 #'   \item{times}{A list of numeric vectors giving time intervals per individual in days}
 #'   \item{rates}{A list of numeric vectors giving hazard rates per interval per individual.}
 #' }
+#' @export
 #' @examples
 #' library(lubridate)
 #' library(dplyr)
