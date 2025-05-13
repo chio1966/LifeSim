@@ -46,12 +46,21 @@
 
 individual_functions = function(lst){
   function_list <- list()
-  for( i in seq_along(lst$times)) {
 
+  for( i in seq_along(lst$times)) {
+    # Compute time points from interval lengths
     ts <- cumsum(lst$times[[i]])
+
+    # Corresponding hazard rates for each interval
     haz <- lst$rates[[i]]
+
+    # Compute cumulative hazard values (H(t)) for piecewise-constant hazard
     H_values <- cumsum(diff(ts)* haz[-length(haz)])
 
+    # Create a list of functions for group i:
+    # h: hazard function (piecewise-constant)
+    # H: cumulative hazard function (piecewise-linear)
+    # Hinv: inverse cumulative hazard function (for simulation)
     function_list[[i]] <- list(
       h = approxfun(x = ts, y = haz, method = "constant"),
       H = approxfun(x = ts, y = c(0, H_values), method = "linear"),

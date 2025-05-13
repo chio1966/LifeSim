@@ -12,7 +12,6 @@
 #' birthdate <- ymd("1980-06-15")
 #' age_date <- ymd("2020-06-14")
 #' age_function(birthdate, age_date)
-#' @export
 age_function <- function(birthdate,age_date) {
   return(time_length(interval(birthdate, age_date), "years"))
 }
@@ -26,7 +25,6 @@ age_function <- function(birthdate,age_date) {
 #'
 #' @return A `Date` vector where all leap days (Feb 29) are moved to Feb 28.
 #'
-#'@export
 adjust_elipe <- function(date) {
   # Move Feb 29 to Feb 28
   date[month(date) == 2 & day(date) == 29] <- date[month(date) == 2 & day(date) == 29] - days(1)
@@ -109,6 +107,21 @@ adjust_elipe <- function(date) {
 #'
 rate_extraction <- function(df, ratetable, mapping, start, end, rate_scale, time_scale) {
 
+  # Check if 'start' and 'end' are characters (representing column names in the data frame)
+  if (!is.character(start) || length(start) != 1) {
+    stop("'start' should be a single character string representing the start column name.")
+  }
+  if (!is.character(end) || length(end) != 1) {
+    stop("'end' should be a single character string representing the end column name.")
+  }
+  # Check if 'rate_scale' and 'time_scale' are numeric and positive
+  if (!is.numeric(rate_scale) || rate_scale <= 0) {
+    stop("'rate_scale' should be a positive numeric value.")
+  }
+  if (!is.numeric(time_scale) || time_scale <= 0) {
+    stop("'time_scale' should be a positive numeric value.")
+  }
+
 times <- list()
 rates <- list()
 
@@ -116,49 +129,57 @@ for ( i in seq_len(nrow(df))){
 
   df_temp <- df[i, ]
 
-  #start and end will be supplied as arguments
+  # Extract diagnosis date, end date and age at diagnosis and check for elipe year/parse if TRUE
   diagnosis_date <- adjust_elipe(df_temp[[start]])
   end_date <- adjust_elipe(df_temp[[end]])
   age_at_diagnosis <- df_temp[[names(mapping)[1]]]
 
+  # Calculate date of birth from age at diagnosis and diagnosis date
   dob <- diagnosis_date - years(floor(age_at_diagnosis))
   dob <- dob - days(floor((age_at_diagnosis-floor(age_at_diagnosis))*365.25))
-
   dob <- adjust_elipe(dob)
 
+  # Generate January 1st dates from year after diagnosis to end date
   jan_1st_dates <- seq(from = floor_date(diagnosis_date, "year") + years(1),
                        to = end_date, by = "year")
-
   jan_1st_dates <- jan_1st_dates[jan_1st_dates >= diagnosis_date]
 
-  birthday <- seq(from = make_date(year(diagnosis_date), month(dob), day(dob)), to = end_date, by = "year")
-  birthday <- birthday[birthday >= diagnosis_date]
+  # Generate birthday dates from diagnosis to end date
+  birthday_dates <- seq(from = make_date(year(diagnosis_date), month(dob), day(dob)), to = end_date, by = "year")
+  birthday_dates <- birthday_dates[birthday_dates >= diagnosis_date]
 
-  dates <- unique(c(diagnosis_date, end_date, jan_1st_dates, birthday))
+  # Combine all relevant time points and sort them
+  dates <- unique(c(diagnosis_date, end_date, jan_1st_dates, birthday_dates))
   dates <- sort(dates)
-  #now need to make function for ages at those dates ect
 
+  # Compute age and calendar year at each date
   age_at_dates <- floor(age_function(birthdate = dob, age_date = dates))
   year_at_dates <- year(dates)
 
+  # Repeat factor variables to match length of age_at_dates
   factors <- df_temp %>% select(names(mapping)[3:length(mapping)]) %>% slice(rep(1,length(age_at_dates)))
 
+  # Combine age, year, and other factors into one data frame
   data_temp <- bind_cols(data.frame(age_at_dates,year_at_dates),factors)
 
+  # Rename columns to match mapping ie. names(data_temp) = names(mapping)
   names(data_temp)[1:2] <- names(mapping)[1:2] #so now data_temp has names = names(mapping)
 
-
-
-  columns_order <- match(names(dimnames(ratetable)),mapping[names(data_temp)]) #reordering df columns to match the dims of ratetable
-
+  # Reorder columns to match the order of dimensions in the ratetable
+  columns_order <- match(names(dimnames(ratetable)),mapping[names(data_temp)])
   data_temp_ordered <- data_temp[,columns_order]
-  ##
+
+  # Preallocate temporary rate vecotor storage
   rates_temp <- numeric(nrow(data_temp_ordered))
 
+  # Extract rates from the ratetable for each time point
   for (j in 1:nrow(data_temp_ordered)) {
     rate_table_arg <- as.list(as.character(data_temp_ordered[j, ]))
     rates_temp[j] <- do.call(`[`, c(list(ratetable), rate_table_arg))
   }
+
+  # Calculate time intervals and scale them
+  # Scale rates
   times[[i]] <- c(0,diff(dates)) * time_scale
   rates[[i]] <- rates_temp * rate_scale
 }

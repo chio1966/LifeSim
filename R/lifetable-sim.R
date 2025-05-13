@@ -47,27 +47,49 @@
 #' str(result)
 
 lifetable_sim = function(n, lst, seed) {
+
+  if (missing(seed) || !is.numeric(seed) || length(seed) != 1 || is.na(seed)) {
+    stop("Argument 'seed' must be a single numeric value and cannot be missing.")
+  }
+
+  # Check 'n'
+  if (!is.numeric(n) || length(n) != 1 || n <= 0 || n != as.integer(n)) {
+    stop("Argument 'n' must be a single positive integer.")
+  }
+
   set.seed(seed)
   time = list()
   status = list()
+
   for (i in seq_along(lst$times)) {
     ts = cumsum(lst$times[[i]])
     haz = lst$rates[[i]]
+
+    # Cumulative hazard function values at ts.
+    # Cumulative hazard function of a piecewise constant hazard function is piecewise linear function.
     H_values = cumsum(diff(ts)* haz[-length(haz)])
     Hinv = approxfun(x = c(0, H_values), y = ts, method = "linear")
 
+    # Simulate uniform sample for inversion
     uniform_sample = -log(runif(n))
 
+    # preallocating storage vectors
     time_temp = numeric(n)
     status_temp = integer(n)
-
+    # Index's of any uniform sample that would constitute a survival time greater than the observation window
     is_censored = uniform_sample > max(H_values)
+
+    # If TRUE then they are censored at the length of the observation window
     time_temp[is_censored] = max(ts)
+
+    # If FALSE then the survival time is obtained by inverse transform sampling method
     time_temp[!is_censored] = Hinv(uniform_sample[!is_censored])
 
+    # Assign status: 0 = censored, 1 = event
     status_temp[is_censored] = 0
     status_temp[!is_censored] = 1
 
+    # Storing results in main list
     time[[i]] = time_temp
     status[[i]] = status_temp
   }
