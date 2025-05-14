@@ -169,7 +169,7 @@ for ( i in seq_len(nrow(df))){
   columns_order <- match(names(dimnames(ratetable)),mapping[names(data_temp)])
   data_temp_ordered <- data_temp[,columns_order]
 
-  # Preallocate temporary rate vecotor storage
+  # Preallocate temporary rate vector storage
   rates_temp <- numeric(nrow(data_temp_ordered))
 
   # Extract rates from the ratetable for each time point
