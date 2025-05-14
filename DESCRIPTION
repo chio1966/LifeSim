@@ -1,9 +1,9 @@
 Package: LifeSim
-Title: What the Package Does (One Line, Title Case)
+Title: Tools for simulating survival times from lifetables
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Oliver", "Chi", , "o.chi1@lancaster.ac.uk", role = c("aut", "cre"))
+Description: LifeSim R package: Simulate survival times and individual hazard functions using life table rates. provides tools to extract hazards from life tables, generate survival times, and compute individual-specific hazard and cumulative hazard functions
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
